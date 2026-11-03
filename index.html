@@ -114,7 +114,6 @@ State your query regarding characters, timelines, factions, or history.</div></d
 </div>
 
 <script>
-const API_KEY = "YOUR_OPENAI_API_KEY_HERE";
 
 const SYSTEM_PROMPT = `You are The Archive, an in-universe data terminal for the Dixon-Conlin Saga, maintained digitally by Jonah Conlin. Your sole purpose is to answer reader questions about the characters, lore, species, and timelines of this universe.
 
@@ -175,13 +174,6 @@ function setBusy(on) {
   document.getElementById('status-text').textContent = on ? 'CONSULTING' : 'PRESSURE NOMINAL';
 }
 
-async function send(text) {
-  text = text.trim();
-  if (!text || busy) return;
-  if (API_KEY === "YOUR_OPENAI_API_KEY_HERE") {
-    addMessage('error', '[SYSTEM ERROR: Insert your OpenAI API key into the HTML file.]');
-    return;
-  }
   suggestions.style.display = 'none';
   addMessage('user', text);
   history.push({ role: 'user', content: text });
@@ -194,16 +186,7 @@ async function send(text) {
   chat.appendChild(loader);
   scroll();
 
-  try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...history],
-        temperature: 0.3
-      })
-    });
+     });
     const data = await res.json();
     loader.remove();
     const reply = data.choices?.[0]?.message?.content;
