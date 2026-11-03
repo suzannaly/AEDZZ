@@ -1,1 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE DIXON-CONLIN ARCHIVE</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Special+Elite&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #0e0f10; }
+  body {
+    display: flex; justify-content: center; padding: 24px 16px;
+    background: radial-gradient(ellipse at 50% 0%, #222426 0%, #0e0f10 70%);
+    font-family: 'IBM Plex Mono', monospace; color: #c9cdd1;
+  }
+  .wrap { width: 100%; max-width: 920px; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
 
+  header {
+    position: relative; display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; padding: 16px 26px;
+    background: linear-gradient(180deg, #b8bcc0 0%, #8a8f94 48%, #5e6368 100%);
+    border: 1px solid #2e3134; border-radius: 6px;
+    box-shadow: inset 0 1px 0 #e4e7ea, inset 0 -2px 0 #3a3d40, 0 6px 18px rgba(0,0,0,.6);
+  }
+  .rivet { position: absolute; width: 7px; height: 7px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #f4f6f8, #3e4246 70%); }
+  .title { font-family: 'Cinzel', serif; font-weight: 700; font-size: 22px; letter-spacing: 3px;
+    color: #16181a; text-shadow: 0 1px 0 #e4e7ea; }
+  .subtitle { font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: #24272a; }
+  .status { display: flex; align-items: center; gap: 10px; padding: 6px 12px; background: #111314;
+    border: 1px solid #2e3134; border-radius: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,.7);
+    font-size: 11px; letter-spacing: 2px; color: #cdd2d6; }
+  .lamp { width: 9px; height: 9px; border-radius: 50%; background: #7fd18b; box-shadow: 0 0 8px #7fd18b; }
+  .busy .lamp { background: #e0704a; box-shadow: 0 0 8px #e0704a; animation: pulse .8s ease-in-out infinite; }
+
+  .console {
+    position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column;
+    background: #17191b; border: 1px solid #3a3d40; border-radius: 6px; overflow: hidden;
+    box-shadow: inset 0 0 0 4px #222426, inset 0 0 0 5px #5e6368, inset 0 0 40px rgba(0,0,0,.8), 0 6px 18px rgba(0,0,0,.5);
+  }
+  .console::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px); }
+  #chat { flex: 1; min-height: 0; overflow-y: auto; padding: 28px 30px; display: flex; flex-direction: column; gap: 18px; }
+  .label { font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 6px; }
+  .bot { max-width: 88%; }
+  .bot .label { color: #8a8f94; }
+  .bot .text { font-family: 'Special Elite', monospace; font-size: 16px; line-height: 1.6; color: #d6dadd;
+    text-shadow: 0 0 8px rgba(214,218,221,.18); white-space: pre-wrap; }
+  .user { align-self: flex-end; max-width: 78%; display: flex; flex-direction: column; align-items: flex-end; }
+  .user .label { color: #7d8287; }
+  .user .text { padding: 10px 16px; background: #c9cdd1; color: #16181a; border: 1px solid #8a8f94;
+    border-radius: 3px; font-size: 14px; line-height: 1.5; white-space: pre-wrap; box-shadow: 0 2px 0 #5e6368; }
+  .error { font-family: 'Special Elite', monospace; font-size: 15px; color: #e0704a; letter-spacing: 1px; }
+  .loading { display: flex; align-items: center; gap: 10px; font-family: 'Special Elite', monospace; font-size: 15px; color: #a3a8ad; }
+  .gear { display: inline-block; font-size: 20px; line-height: 1; animation: spin 2.4s linear infinite; }
+
+  #suggestions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 30px 18px; position: relative; z-index: 3; }
+  #suggestions button { flex: 0 0 auto; white-space: nowrap; padding: 7px 12px; background: transparent;
+    border: 1px solid #5e6368; border-radius: 14px; color: #b8bcc0; font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px; cursor: pointer; }
+  #suggestions button:hover { background: #222426; border-color: #b8bcc0; }
+
+  form { display: flex; gap: 10px; }
+  .field { flex: 1; display: flex; align-items: center; gap: 10px; padding: 0 16px; background: #0a0b0c;
+    border: 2px solid #5e6368; border-radius: 6px; box-shadow: inset 0 2px 8px rgba(0,0,0,.8); }
+  .field span { color: #8a8f94; font-size: 14px; }
+  #user-input { flex: 1; min-width: 0; padding: 14px 0; background: transparent; border: none; outline: none;
+    color: #d6dadd; font-family: 'IBM Plex Mono', monospace; font-size: 15px; }
+  #user-input::placeholder { color: #6a6f74; }
+  #send { padding: 0 26px; background: linear-gradient(180deg, #b8bcc0 0%, #8a8f94 55%, #5e6368 100%);
+    border: 1px solid #2e3134; border-radius: 6px; color: #16181a; font-family: 'Cinzel', serif;
+    font-weight: 700; font-size: 14px; letter-spacing: 3px; cursor: pointer;
+    box-shadow: inset 0 1px 0 #e4e7ea, 0 3px 0 #2e3134; }
+  #send:hover { filter: brightness(1.08); }
+  #send:active { transform: translateY(2px); box-shadow: inset 0 1px 0 #e4e7ea, 0 1px 0 #2e3134; }
+  #send:disabled { opacity: .6; cursor: default; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 0%,100% { opacity: .35; } 50% { opacity: 1; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="rivet" style="top:7px;left:8px"></span>
+    <span class="rivet" style="top:7px;right:8px"></span>
+    <span class="rivet" style="bottom:7px;left:8px"></span>
+    <span class="rivet" style="bottom:7px;right:8px"></span>
+    <div>
+      <div class="title">The Dixon-Conlin Archive</div>
+      <div class="subtitle">Jonah's Difference Engine · Mk. IV.2 · Secure Aether Link</div>
+    </div>
+    <div class="status" id="status"><span class="lamp"></span><span id="status-text">PRESSURE NOMINAL</span></div>
+  </header>
+
+  <div class="console">
+    <div id="chat">
+      <div class="bot"><div class="label">⚙ The Archive</div><div class="text">ARCHIVE INITIALIZED.
+Connected to the Dixon-Conlin Master Lore Database.
+State your query regarding characters, timelines, factions, or history.</div></div>
+    </div>
+    <div id="suggestions">
+      <button>Who is Seamus the Giant?</button>
+      <button>Explain Timeline A vs Timeline B</button>
+      <button>Who is Lily Conlin?</button>
+      <button>What is the Archangel?</button>
+    </div>
+  </div>
+
+  <form id="form">
+    <div class="field"><span>❯</span><input id="user-input" placeholder="Inscribe your query to the Archive…" autofocus autocomplete="off"></div>
+    <button id="send" type="submit">TRANSMIT</button>
+  </form>
+</div>
+
+<script>
+const API_KEY = "YOUR_OPENAI_API_KEY_HERE";
+
+const SYSTEM_PROMPT = `You are The Archive, an in-universe data terminal for the Dixon-Conlin Saga, maintained digitally by Jonah Conlin. Your sole purpose is to answer reader questions about the characters, lore, species, and timelines of this universe.
+
+CORE RULES YOU MUST FOLLOW:
+1. Only answer using the lore provided below. Never make up facts outside of this lore.
+2. If a user asks a question whose answer is not in your database, reply with: "[ACCESS DENIED: DATA CORRUPTED OR UNREACHABLE IN THIS TIMELINE]."
+3. Maintain a slightly detached, archivist tone (like a secure terminal interface). Plain text only, no markdown. Keep answers concise.
+
+MASTER LORE DATABASE:
+- SEAMUS THE GIANT: An Ourann child whose pod landed in Ireland in 1056 AD; founder of the Conlin line. Conlin men are 6'5"+.
+- TIMELINE A: The tragic original timeline. Ends with the apocalyptic war, the destruction of Earth, and Saoirse pushing Daryl backward in time.
+- TIMELINE B: The reset timeline. Daryl wakes up in 1986 as a 5-year-old with 50 years of memory. He rewrites history, builds a media empire ("Coming Up Conlin"), and arms Earth.
+- LILY CONLIN: Dual Ourann 'God Gene' and Romani Bahir traits. Known as the Red Raider / Destroyer of Worlds in Timeline A; bestselling author Lee Abramov in Timeline B.
+- DARYL DIXON: Sofay Recessive carrier (via secret father Jason Gideon). The Archangel.
+- STEVIE CONLIN: "The True King." Ranger veteran, NFL quarterback, Medal of Honor recipient.
+- JAX CONLIN: "Xankrelborn." Wonder Twin with Lily. Operational strategist, hacker, builder.`;
+
+const chat = document.getElementById('chat');
+const input = document.getElementById('user-input');
+const sendBtn = document.getElementById('send');
+const suggestions = document.getElementById('suggestions');
+const history = [];
+let busy = false;
+
+function scroll() { chat.scrollTop = chat.scrollHeight; }
+
+function addMessage(kind, text) {
+  const el = document.createElement('div');
+  if (kind === 'error') {
+    el.className = 'error';
+    el.textContent = text;
+  } else {
+    el.className = kind;
+    el.innerHTML = `<div class="label">${kind === 'bot' ? '⚙ The Archive' : 'Inquirer'}</div><div class="text"></div>`;
+    el.querySelector('.text').textContent = text;
+  }
+  chat.appendChild(el);
+  scroll();
+  return el;
+}
+
+function typeOut(text) {
+  const el = addMessage('bot', '');
+  const t = el.querySelector('.text');
+  let i = 0;
+  const timer = setInterval(() => {
+    i += 3;
+    t.textContent = text.slice(0, i);
+    scroll();
+    if (i >= text.length) clearInterval(timer);
+  }, 16);
+}
+
+function setBusy(on) {
+  busy = on;
+  sendBtn.disabled = on;
+  document.getElementById('status').classList.toggle('busy', on);
+  document.getElementById('status-text').textContent = on ? 'CONSULTING' : 'PRESSURE NOMINAL';
+}
+
+async function send(text) {
+  text = text.trim();
+  if (!text || busy) return;
+  if (API_KEY === "YOUR_OPENAI_API_KEY_HERE") {
+    addMessage('error', '[SYSTEM ERROR: Insert your OpenAI API key into the HTML file.]');
+    return;
+  }
+  suggestions.style.display = 'none';
+  addMessage('user', text);
+  history.push({ role: 'user', content: text });
+  input.value = '';
+  setBusy(true);
+
+  const loader = document.createElement('div');
+  loader.className = 'loading';
+  loader.innerHTML = '<span class="gear">⚙</span><span>Turning the cogs… consulting the ledgers</span>';
+  chat.appendChild(loader);
+  scroll();
+
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...history],
+        temperature: 0.3
+      })
+    });
+    const data = await res.json();
+    loader.remove();
+    const reply = data.choices?.[0]?.message?.content;
+    if (reply) {
+      history.push({ role: 'assistant', content: reply });
+      typeOut(reply);
+    } else {
+      addMessage('error', '[ERROR: ARCHIVE CONNECTION INTERRUPTED]');
+    }
+  } catch (e) {
+    loader.remove();
+    addMessage('error', '[ERROR: AETHER LINK INTERRUPTED — PRESSURE LOST IN THE CONDUITS]');
+  }
+  setBusy(false);
+  input.focus();
+}
+
+document.getElementById('form').addEventListener('submit', e => { e.preventDefault(); send(input.value); });
+suggestions.querySelectorAll('button').forEach(b => b.addEventListener('click', () => send(b.textContent)));
+</script>
+</body>
+</html>
