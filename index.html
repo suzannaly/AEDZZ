@@ -77,7 +77,7 @@
 
   @keyframes spin { to { transform: rotate(360deg); } }
   @keyframes pulse { 0%,100% { opacity: .35; } 50% { opacity: 1; } }
-</style>
+@media (max-width: 600px) { body { padding: 12px 8px; } header { padding: 14px; } .title { font-size: 17px; letter-spacing: 1px; } #chat { padding: 18px; } .bot, .user { max-width: 100%; } #suggestions { padding: 0 18px 14px; } #suggestions button { white-space: normal; text-align: left; } #send { padding: 0 12px; font-size: 12px; letter-spacing: 1px; } .field { min-width: 0; } } button:focus-visible, input:focus-visible { outline: 2px solid #c9cdd1; outline-offset: 3px; } </style>
 </head>
 <body>
 <div class="wrap">
@@ -96,8 +96,8 @@
   <div class="console">
     <div id="chat">
       <div class="bot"><div class="label">⚙ The Archive</div><div class="text">ARCHIVE INITIALIZED.
-Connected to the Dixon-Conlin Master Lore Database.
-State your query regarding characters, timelines, factions, or history.</div></div>
+LOCAL REFERENCE EDITION · 7 curated entries.
+Ask about an included character or timeline. Type topics to see available entries.</div></div>
     </div>
     <div id="suggestions">
       <button>Who is Seamus the Giant?</button>
@@ -114,98 +114,61 @@ State your query regarding characters, timelines, factions, or history.</div></d
 </div>
 
 <script>
-
-const SYSTEM_PROMPT = `You are The Archive, an in-universe data terminal for the Dixon-Conlin Saga, maintained digitally by Jonah Conlin. Your sole purpose is to answer reader questions about the characters, lore, species, and timelines of this universe.
-
-CORE RULES YOU MUST FOLLOW:
-1. Only answer using the lore provided below. Never make up facts outside of this lore.
-2. If a user asks a question whose answer is not in your database, reply with: "[ACCESS DENIED: DATA CORRUPTED OR UNREACHABLE IN THIS TIMELINE]."
-3. Maintain a slightly detached, archivist tone (like a secure terminal interface). Plain text only, no markdown. Keep answers concise.
-
-MASTER LORE DATABASE:
-- SEAMUS THE GIANT: An Ourann child whose pod landed in Ireland in 1056 AD; founder of the Conlin line. Conlin men are 6'5"+.
-- TIMELINE A: The tragic original timeline. Ends with the apocalyptic war, the destruction of Earth, and Saoirse pushing Daryl backward in time.
-- TIMELINE B: The reset timeline. Daryl wakes up in 1986 as a 5-year-old with 50 years of memory. He rewrites history, builds a media empire ("Coming Up Conlin"), and arms Earth.
-- LILY CONLIN: Dual Ourann 'God Gene' and Romani Bahir traits. Known as the Red Raider / Destroyer of Worlds in Timeline A; bestselling author Lee Abramov in Timeline B.
-- DARYL DIXON: Sofay Recessive carrier (via secret father Jason Gideon). The Archangel.
-- STEVIE CONLIN: "The True King." Ranger veteran, NFL quarterback, Medal of Honor recipient.
-- JAX CONLIN: "Xankrelborn." Wonder Twin with Lily. Operational strategist, hacker, builder.`;
-
+const loreEntries = [
+  { terms: ['seamus', 'giant', 'ourann', 'ireland'], text: 'SEAMUS THE GIANT: An Ourann child whose pod landed in Ireland in 1056 AD; founder of the Conlin line. Conlin men are 6\'5"+.' },
+  { terms: ['timeline a', 'original timeline'], text: 'TIMELINE A: The tragic original timeline. Ends with the apocalyptic war, the destruction of Earth, and Saoirse pushing Daryl backward in time.' },
+  { terms: ['timeline b', 'reset timeline'], text: 'TIMELINE B: The reset timeline. Daryl wakes up in 1986 as a 5-year-old with 50 years of memory. He rewrites history, builds a media empire ("Coming Up Conlin"), and arms Earth.' },
+  { terms: ['lily', 'lee abramov', 'red raider', 'destroyer of worlds', 'bahir'], text: 'LILY CONLIN: Dual Ourann "God Gene" and Romani Bahir traits. Known as the Red Raider / Destroyer of Worlds in Timeline A; bestselling author Lee Abramov in Timeline B.' },
+  { terms: ['daryl', 'archangel', 'jason', 'gideon', 'sofay'], text: 'DARYL DIXON: Sofay Recessive carrier (via secret father Jason Gideon). The Archangel.' },
+  { terms: ['stevie', 'true king', 'ranger', 'quarterback'], text: 'STEVIE CONLIN: "The True King." Ranger veteran, NFL quarterback, Medal of Honor recipient.' },
+  { terms: ['jax', 'xankrelborn', 'wonder twin', 'hacker'], text: 'JAX CONLIN: "Xankrelborn." Wonder Twin with Lily. Operational strategist, hacker, builder.' }
+];
 const chat = document.getElementById('chat');
 const input = document.getElementById('user-input');
 const sendBtn = document.getElementById('send');
 const suggestions = document.getElementById('suggestions');
-const history = [];
-let busy = false;
-
-function scroll() { chat.scrollTop = chat.scrollHeight; }
-
+chat.setAttribute('role', 'log');
+chat.setAttribute('aria-live', 'polite');
+input.setAttribute('aria-label', 'Ask the Archive');
 function addMessage(kind, text) {
   const el = document.createElement('div');
-  if (kind === 'error') {
-    el.className = 'error';
-    el.textContent = text;
-  } else {
-    el.className = kind;
-    el.innerHTML = `<div class="label">${kind === 'bot' ? '⚙ The Archive' : 'Inquirer'}</div><div class="text"></div>`;
-    el.querySelector('.text').textContent = text;
-  }
+  el.className = kind;
+  const label = document.createElement('div');
+  label.className = 'label';
+  label.textContent = kind === 'bot' ? '⚙ The Archive' : 'Inquirer';
+  const body = document.createElement('div');
+  body.className = 'text';
+  body.textContent = text;
+  el.append(label, body);
   chat.appendChild(el);
-  scroll();
-  return el;
+  chat.scrollTop = chat.scrollHeight;
 }
-
-function typeOut(text) {
-  const el = addMessage('bot', '');
-  const t = el.querySelector('.text');
-  let i = 0;
-  const timer = setInterval(() => {
-    i += 3;
-    t.textContent = text.slice(0, i);
-    scroll();
-    if (i >= text.length) clearInterval(timer);
-  }, 16);
+function normalize(text) {
+  return text.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
-
-function setBusy(on) {
-  busy = on;
-  sendBtn.disabled = on;
-  document.getElementById('status').classList.toggle('busy', on);
-  document.getElementById('status-text').textContent = on ? 'CONSULTING' : 'PRESSURE NOMINAL';
-}
-
-  suggestions.style.display = 'none';
-  addMessage('user', text);
-  history.push({ role: 'user', content: text });
-  input.value = '';
-  setBusy(true);
-
-  const loader = document.createElement('div');
-  loader.className = 'loading';
-  loader.innerHTML = '<span class="gear">⚙</span><span>Turning the cogs… consulting the ledgers</span>';
-  chat.appendChild(loader);
-  scroll();
-
-     });
-    const data = await res.json();
-    loader.remove();
-    const reply = data.choices?.[0]?.message?.content;
-    if (reply) {
-      history.push({ role: 'assistant', content: reply });
-      typeOut(reply);
-    } else {
-      addMessage('error', '[ERROR: ARCHIVE CONNECTION INTERRUPTED]');
-    }
-  } catch (e) {
-    loader.remove();
-    addMessage('error', '[ERROR: AETHER LINK INTERRUPTED — PRESSURE LOST IN THE CONDUITS]');
+function lookup(text) {
+  const query = normalize(text);
+  const words = ' ' + query + ' ';
+  if (/\b(help|topics|entries|database)\b/.test(query)) {
+    return 'AVAILABLE ENTRIES: Seamus the Giant; Timeline A; Timeline B; Lily Conlin; Daryl Dixon / the Archangel; Stevie Conlin; Jax Conlin / Xankrelborn. This edition searches curated entries locally; it does not generate AI answers.';
   }
-  setBusy(false);
+  const compareTimelines = /\btimelines?\b/.test(query) && (/\b(a|b)\b/.test(query) || /\b(compare|explain|difference|both)\b/.test(query));
+  const matches = loreEntries.filter(entry => entry.terms.some(term => words.includes(' ' + term + ' ')) || (compareTimelines && entry.terms.some(term => term.startsWith('timeline '))));
+  return matches.length ? matches.map(entry => entry.text).join('\n\n') : '[NO MATCH IN THIS EDITION]\nTry a character name, Timeline A, Timeline B, or "topics". Only the seven included entries are available; the full vault is not connected.';
+}
+function send(value) {
+  const text = value.trim();
+  if (!text) return;
+  addMessage('user', text);
+  input.value = '';
+  addMessage('bot', lookup(text));
   input.focus();
 }
-
-document.getElementById('form').addEventListener('submit', e => { e.preventDefault(); send(input.value); });
-suggestions.querySelectorAll('button').forEach(b => b.addEventListener('click', () => send(b.textContent)));
+document.getElementById('form').addEventListener('submit', event => {
+  event.preventDefault();
+  send(input.value);
+});
+suggestions.querySelectorAll('button').forEach(button => button.addEventListener('click', () => send(button.textContent)));
 </script>
 </body>
 </html>
